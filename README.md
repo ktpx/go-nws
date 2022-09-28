@@ -6,7 +6,7 @@ The client queries and lists alerts from the NWS API (active alerts) endpoint.
 
 ##Example
 
-``
+```
 $ ./gofmt -area FL -s Extreme -c Observed,Likely
 ```
 
@@ -16,8 +16,8 @@ case sensitive (ie, `Extreme`) as per the help file.
 
 ## Example output
 
-```
 
+```
 ====================================================================
 Event    : Storm Surge Warning
 Headline : Storm Surge Warning issued September 28 at 11:03AM EDT by
