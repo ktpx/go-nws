@@ -174,6 +174,7 @@ func (data *NWSAlert) PrintReport() {
 		fmt.Fprintf(&b, "Expires  : %s\n", v.Properties.Expires)
 		fmt.Fprintf(&b, "Sender   : %s (%s)\n", v.Properties.SenderName, v.Properties.Sender)
 		fmt.Fprintf(&b, "Msgtype  : %s\n", v.Properties.MessageType)
+		fmt.Fprintf(&b, "AreaDesc : %s\n", v.Properties.AreaDesc)
 		fmt.Fprintf(&b, "Desc     :\n%s\n", v.Properties.Description)
 		if len(v.Properties.Instruction) > 0 {
 			fmt.Fprintf(&b, "%s\n", *line("-", 50))
