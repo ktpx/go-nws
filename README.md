@@ -4,7 +4,7 @@ Go CLI Client for NWS (National Weather Service) Alerts
 
 The client queries and lists alerts from the NWS API (active alerts) endpoint.  
 
-## Example
+### Example
 
 ```
 $ ./gonws -area FL -s Extreme -c Observed,Likely
@@ -13,7 +13,7 @@ $ ./gonws -area FL -s Extreme -c Observed,Likely
 Note that that argument attributes are case sensitive (ie, `Extreme`). Check
 `-h`for more options.
 
-## Example output
+### Example output
 
 
 ```
