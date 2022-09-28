@@ -7,7 +7,7 @@ The client queries and lists alerts from the NWS API (active alerts) endpoint.
 ##Example
 
 ```
-$ ./gofmt -area FL -s Extreme -c Observed,Likely
+$ ./gonws -area FL -s Extreme -c Observed,Likely
 ```
 
 All options, are just that. Optional.  No arguments
