@@ -10,9 +10,8 @@ The client queries and lists alerts from the NWS API (active alerts) endpoint.
 $ ./gofmt -area FL -s Extreme -c Observed,Likely
 ```
 
-All options, are just that. Optional.  No arguments
-will list all alerts. Not that argument fields are 
-case sensitive (ie, `Extreme`) as per the help file.
+Note that that argument attributes are case sensitive (ie, `Extreme`). Check
+`-h`for more options.
 
 ## Example output
 
