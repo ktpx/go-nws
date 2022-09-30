@@ -1,9 +1,10 @@
 package main
 
-//
-// A Go client for NWS API queries.  Only active alerts.
-// v1.0
-//
+/////
+// A Go Client for NWS API queries.  Only active alerts and count enpoints.
+// v1.1
+// @Jinxd  (MIT License)
+/////
 
 import (
 	"bytes"
@@ -16,6 +17,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"sort"
 	"strings"
 )
 
@@ -75,8 +77,19 @@ type Options struct {
 	service      string // API service
 }
 
+// Result Structure for /active/count
+type NWSAlertCount struct {
+	Total   int            `json:"total"`
+	Land    int            `json:"land"`
+	Marine  int            `json:"marine"`
+	Regions map[string]int `json:"regions"`
+	Areas   map[string]int `json:"areas"`
+	Zones   map[string]int `json:"zones"`
+}
+
 type params map[string]interface{}
-type doFunc func(req *http.Request) (*http.Response, error)
+
+//type doFunc func(req *http.Request) (*http.Response, error)
 
 type Client struct {
 	BaseURL    string
@@ -84,12 +97,11 @@ type Client struct {
 	HTTPClient *http.Client
 	Logger     *log.Logger
 	Debug      bool
-	do         doFunc
 }
 
 func NewClient() *Client {
 	return &Client{
-		BaseURL:    "https://api.weather.gov/alerts",
+		BaseURL:    "https://api.weather.gov",
 		UserAgent:  "go-nws",
 		HTTPClient: http.DefaultClient,
 		Logger:     log.New(os.Stderr, "Go-nws", log.LstdFlags),
@@ -114,15 +126,16 @@ type request struct {
 }
 
 func init() {
+	flag.StringVar(&opts.area, "area", "", "Specify area (AR,AH,CA,FL,....).")
 	flag.StringVar(&opts.certainty, "c", "", "Specify certainty (Observed,Likely,Possible,Unlikely)")
 	flag.StringVar(&opts.severity, "s", "", "Specify severity (Extreme,Severe,Moderate,Minor,Unknown)")
-	flag.StringVar(&opts.service, "x", "", "Specify api service (unused)")
+	flag.StringVar(&opts.service, "x", "", "Specify api endpoint (active,count)")
 	flag.StringVar(&opts.status, "t", "", "Specify status (actual,exercise,system,test,draft)")
 	flag.StringVar(&opts.region, "r", "", "Specify Marine Region code (AL,AT,GL,PA,PI).")
 	flag.StringVar(&opts.region_type, "rt", "", "Specify region type (land, marine).")
-	flag.StringVar(&opts.area, "area", "", "Specify area (AR,AH,CA,FL,....).")
 	flag.StringVar(&opts.event, "e", "", "Specify Event Name.")
 	flag.StringVar(&opts.zone, "z", "", "Specify Zone.")
+	flag.StringVar(&opts.urgency, "u", "", "Specify Urgency (Immediate,Expected,Future,Past,Unknown)")
 }
 
 // Map command line options to parameters
@@ -153,34 +166,73 @@ func (o *Options) SetParams(p *params) {
 	}
 }
 
+func Exists(s string, a []string) bool {
+	for _, v := range a {
+		if s == v {
+			return true
+		}
+	}
+	return false
+}
+
 var line = func(s string, i int) *string {
 	l := fmt.Sprintf(strings.Repeat(s, i))
 	return &l
+}
+
+func (data *NWSAlertCount) PrintReport() {
+
+	l := *line("-", 40)
+	fmt.Printf("%s\nTotal Alert Count Report\n%s\n", l, l)
+	fmt.Printf("Total  : %d\n", data.Total)
+	fmt.Printf("Land   : %d\n", data.Land)
+	fmt.Printf("Marine : %d\n", data.Marine)
+
+	// Sort the keys by area name
+	keys := make([]string, 0, len(data.Areas))
+	for k := range data.Areas {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	b := bytes.Buffer{}
+	var c int
+	fmt.Fprintf(&b, "%s\nAlerts per Area\n%s\n", l, l)
+	for _, k := range keys {
+		c++
+		fmt.Fprintf(&b, " %s : %3d ", k, data.Areas[k])
+		if c%4 == 0 {
+			fmt.Fprintf(&b, "%s", "\n")
+		}
+	}
+	fmt.Println(b.String())
 }
 
 func (data *NWSAlert) PrintReport() {
 
 	b := bytes.Buffer{}
 	cnt := 0
+	sep := *line("=", 50)
 	for _, v := range data.Features {
-		fmt.Fprintf(&b, "Event    : %s\n", v.Properties.Event)
+		fmt.Fprintf(&b, "%s\nEvent    : %s\n", sep, v.Properties.Event)
 		fmt.Fprintf(&b, "Headline : %s\n", v.Properties.Headline)
 		fmt.Fprintf(&b, "Category : %s\n", v.Properties.Category)
+		fmt.Fprintf(&b, "Msgtype  : %s\n", v.Properties.MessageType)
 		fmt.Fprintf(&b, "Urgency  : %s\n", v.Properties.Urgency)
+		fmt.Fprintf(&b, "Certainty: %s\n", v.Properties.Certainty)
 		fmt.Fprintf(&b, "Type     : %s\n", v.Properties.Type)
 		fmt.Fprintf(&b, "Sent     : %s\n", v.Properties.Sent)
 		fmt.Fprintf(&b, "Effective: %s\n", v.Properties.Effective)
 		fmt.Fprintf(&b, "Onset    : %s\n", v.Properties.Onset)
 		fmt.Fprintf(&b, "Expires  : %s\n", v.Properties.Expires)
 		fmt.Fprintf(&b, "Sender   : %s (%s)\n", v.Properties.SenderName, v.Properties.Sender)
-		fmt.Fprintf(&b, "Msgtype  : %s\n", v.Properties.MessageType)
 		fmt.Fprintf(&b, "AreaDesc : %s\n", v.Properties.AreaDesc)
-		fmt.Fprintf(&b, "Desc     :\n%s\n", v.Properties.Description)
+		fmt.Fprintf(&b, "Description  :\n%s\n", v.Properties.Description)
 		if len(v.Properties.Instruction) > 0 {
-			fmt.Fprintf(&b, "%s\n", *line("-", 50))
+			fmt.Fprintf(&b, "%s\n", *line("--", 25))
 			fmt.Fprintf(&b, "Instructions : %s\n", v.Properties.Instruction)
 		}
-		fmt.Fprintf(&b, "%s\n", *line("=", 80))
+		fmt.Fprintf(&b, "%s\n", sep)
 		cnt++
 
 	}
@@ -188,35 +240,38 @@ func (data *NWSAlert) PrintReport() {
 	fmt.Printf("%d Alerts listed.\n", cnt)
 }
 
-var baseURL = "https://api.weather.gov/alerts/active"
-var opts Options
+func (c *Client) callAPI(r *request, p *params) (data []byte, err error) {
 
-func main() {
-
-	c := NewClient()
-	parms := params{}
-
-	flag.Parse()
-	opts.SetParams(&parms)
-	c.Debug = false
-	c.debug("Options %v", opts)
+	// Build Query String
 	query := url.Values{}
-	for k, v := range parms {
-		query.Set(k, fmt.Sprintf("%v", v))
+	var urlstring string
+	if p != nil {
+		for k, v := range *p {
+			query.Set(k, fmt.Sprintf("%v", v))
+		}
+		urlstring = query.Encode()
 	}
-	urlstring := query.Encode()
-	fullURL := fmt.Sprintf("%s?%s", baseURL, urlstring)
-
+	fullURL, _ := url.JoinPath(c.BaseURL, r.endpoint)
+	if urlstring != "" {
+		fullURL = fmt.Sprintf("%s?%s", fullURL, urlstring)
+	}
 	c.debug("FullURL: %s", fullURL)
 
 	// Build new request
-	r, err := http.NewRequest("GET", fullURL, nil)
+	req, err := http.NewRequest("GET", fullURL, nil)
 	if err != nil {
 		log.Fatal(err)
 	}
 	c.debug("Request: %#v", r)
-	r.Header.Set("UserAgent", "go-nwsclient")
-	resp, err := c.HTTPClient.Do(r)
+	if r.method != "" {
+		req.Method = r.method
+	}
+	if r.header != nil {
+		req.Header = r.header
+	}
+	req.Header.Set("UserAgent", "go-nwsclient")
+	req.Header.Set("Accept", "application/geo+json")
+	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -227,15 +282,90 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	if resp.StatusCode > http.StatusOK {
+		if resp.StatusCode == 503 {
+			log.Println("The API is probably too busy, try again in a few.")
+		}
 		log.Fatalf("Error: API returned: %s\n", resp.Status)
+		/*              apiErr := new(APIError)
+		                e := json.Unmarshal(data, apiErr)
+		                if e != nil {
+		                        c.debug("failed to unmarshal json: %s", e)
+		                }
+		                return nil, apiErr
+		*/
 	}
+	return body, nil
+}
+
+// alert/count endpoint
+func (c *Client) NWSAlertCount(p *params) (*NWSAlertCount, error) {
+	r := &request{
+		method:   http.MethodGet,
+		endpoint: "/alerts/active/count",
+	}
+	res, err := c.callAPI(r, nil)
+	if err != nil {
+		return nil, err
+	}
+	j := new(NWSAlertCount)
+	err = json.Unmarshal(res, &j)
+	if err != nil {
+		return nil, err
+	}
+	return j, nil
+}
+
+// alert/active endpoint
+func (c *Client) NWSAlertActive(p *params) (*NWSAlert, error) {
+	r := &request{
+		method:   http.MethodGet,
+		endpoint: "/alerts/active",
+	}
+	res, err := c.callAPI(r, p)
 	// Unmarshal response
 	data := NWSAlert{}
-	err = json.Unmarshal(body, &data)
+	err = json.Unmarshal(res, &data)
 	if err != nil {
 		log.Fatal(err)
 	}
-	data.PrintReport()
+	return &data, nil
+
+}
+
+var opts Options
+var MarineRegionCodes = [6]string{"AL", "AT", "GL", "GM", "PA", "PI"}
+var RegionCodes = [6]string{"AR", "CR", "ER", "PR", "SR", "WR"}
+var MarineAreaCodes = [15]string{
+	"AM", "AN", "GM", "LC", "LE", "LH", "LM", "LO",
+	"LS", "PH", "PK", "PM", "PS", "PZ", "SL",
+}
+
+func main() {
+
+	c := NewClient()
+	flag.Parse()
+
+	c.Debug = false
+	c.debug("Options %+v", opts)
+
+	parms := params{}
+	opts.SetParams(&parms)
+
+	switch opts.service {
+	case "count":
+		data, err := c.NWSAlertCount(&parms)
+		if err != nil {
+			panic(err)
+		}
+		data.PrintReport()
+	case "alerts":
+		data, err := c.NWSAlertActive(&parms)
+		if err != nil {
+			panic(err)
+		}
+		data.PrintReport()
+	default:
+		fmt.Println("Go-nws: Specify report type -x <alerts,count> -h for more info and options.")
+	}
 }

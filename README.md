@@ -7,49 +7,72 @@ The client queries and lists alerts from the NWS API (active alerts) endpoint.
 ### Example
 
 ```
-$ ./gonws -area FL -s Extreme -c Observed,Likely
+$ gonws -x alerts -area FL -s Extreme -c Observed,Likely
+
+$ gonws -x count
+
 ```
 
 Note that that argument attributes are case sensitive (ie, `Extreme`). Check
 `-h`for more options.
 
-### Example output
-
+### Example report for Alerts
 
 ```
-====================================================================
-Event    : Storm Surge Warning
-Headline : Storm Surge Warning issued September 28 at 11:03AM EDT by
+==================================================
+Event    : Flash Flood Watch
+Headline : Flash Flood Watch issued September 29 at 11:57AM PDT until September 30 at 3:00PM PDT by NWS Spokane WA
 Category : Met
-Urgency  : Immediate
+Msgtype  : Alert
+Urgency  : Future
+Certainty: Possible
 Type     : wx:Alert
-Sent     : 2022-09-28T11:03:00-04:00
-Effective: 2022-09-28T11:03:00-04:00
-Onset    : 2022-09-28T11:03:00-04:00
-Expires  : 2022-09-28T19:15:00-04:00
-Sender   : NWS Miami FL (w-nws.webmaster@noaa.gov)
-Msgtype  : Update
-Desc     :
-* LOCATIONS AFFECTED
-- Flamingo
-- Cape Sable
-- Loop Road
+Sent     : 2022-09-29T11:57:00-07:00
+Effective: 2022-09-29T11:57:00-07:00
+Onset    : 2022-09-29T11:57:00-07:00
+Expires  : 2022-09-29T15:00:00-07:00
+Sender   : NWS Spokane WA (w-nws.webmaster@noaa.gov)
+AreaDesc : Pend Oreille, WA
+Description  :
+* WHAT...Flooding caused by upstream dam releases of Box Canyon Dam
+is possible on the Pend Oreille River.
 
-* WIND
-- LATEST LOCAL FORECAST: Equivalent Tropical Storm force wind
-- Peak Wind Forecast: 30-40 mph with gusts to 75 mph
-- Window for Tropical Storm force winds: through the next few
-hours
+* WHERE...A portion of Northeast Washington, including Pend Oreille
+county.
 
-- THREAT TO LIFE AND PROPERTY THAT INCLUDES TYPICAL FORECAST
-UNCERTAINTY IN TRACK, SIZE AND INTENSITY: Potential for wind 39
-to 57 mph
-- The wind threat has decreased from the previous assessment.
-- PLAN: Plan for hazardous wind of equivalent tropical storm
-force.
-- PREPARE: Last minute efforts to protect property should now
-be complete. The area remains subject to limited wind
-damage.
-- ACT: Now is the time to shelter from hazardous wind.
+* WHEN...Through this afternoon.
 
+* IMPACTS...Increased releases may result in flash flooding of
+low-lying areas below the dam, especially to Metaline and Metaline
+Falls.
+
+* ADDITIONAL DETAILS...
+- Flows have increased from the Box Canyon Dam from 16 kcfs to
+60 kcfs.
+- http://www.weather.gov/safety/flood
+--------------------------------------------------
+Instructions : You should monitor later forecasts and be prepared to take action
+should Flash Flood Warnings be issued.
+==================================================
+```
+### Count Report
+
+```
+----------------------------------------
+Total Alert Count Report
+----------------------------------------
+Total  : 495
+Land   : 490
+Marine : 178
+----------------------------------------
+Alerts per Area
+----------------------------------------
+ AK :   7  AL :   2  AM :  14  AN :  33
+ CO :   1  DE :   3  FL :  48  GA :  41
+ GM :   5  IA :   1  KS :   1  LE :   4
+ MD :   8  MT :   1  NC : 124  NE :   1
+ NJ :   4  OR :   1  PK : 111  PZ :  11
+ SC :  71  SD :   1  TN :   1  TX :   7
+ VA :  30  VI :   1  WA :   1  WI :   1
+ WV :   2  WY :   1
 ```
